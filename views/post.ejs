@@ -5,7 +5,7 @@
 <div class="row edit text-center">
   <form class="col-lg-1 col-md-2 col-sm-6" action="/edit" method="post">
   <button type="submit" name="edititem" value="<%= postitem.title %>" class="editbtn btn btn-outline-dark">Edit</button>
-  <input type="hidden" name="editcontent" value="<%- postitem.content %>">
+  <input type="hidden" name="editcontent" value="<%= postitem.content %>">
   <input type="hidden" name="editid" value="<%- postitem._id %>">
   </form>
   <form class="col-lg-1 col-md-2 col-sm-6" action="/delete" method="post">

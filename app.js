@@ -35,7 +35,8 @@ mongoose.connect("mongodb+srv://admin-jiani:" + process.env.PASSCODE + "@jianicl
 const blogSchema = new mongoose.Schema({
   title: String,
   content: String,
-  ispost: Boolean
+  ispost: Boolean,
+  userid: String
 });
 const Blog = mongoose.model("Blog", blogSchema);
 
@@ -60,7 +61,8 @@ const userSchema = new mongoose.Schema({
     unique: true // `email` must be unique
   },
   password: String,
-  googleId: String
+  googleId: String,
+  blogs: [mongoose.Types.ObjectId]
 });
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate);
@@ -134,24 +136,79 @@ app.get('/auth/google/home',
     res.redirect('/home');
   });
 
+app.get("/people/:uid", function(req, res){
+  if (req.isAuthenticated()) {
+    if  (req.user.id === req.params.uid) {
+      res.redirect("/home");
+    } else {
+
+      User.findOne({_id: mongoose.Types.ObjectId(req.params.uid)}, function(err, foundUser){
+        if(!err && foundUser){
+          if(foundUser.blogs.length>0){
+            Blog.find({
+                '_id': { $in: foundUser.blogs}
+            }, function(err, docs){
+                 res.render("people", {hposts: docs});
+            });
+          } else {
+            res.redirect("/home");
+          }
+        }else{
+          res.redirect("/home");
+        }
+      });
+
+    }
+  } else {
+    res.redirect("/visitor/"+req.params.uid);
+  }
+})
+
+app.get("/visitor/:uid", function(req, res){
+  User.findOne({_id: mongoose.Types.ObjectId(req.params.uid)}, function(err, foundUser){
+    if(!err && foundUser){
+      if(foundUser.blogs.length>0){
+        Blog.find({
+            '_id': { $in: foundUser.blogs}
+        }, function(err, docs){
+             res.render("visitor", {hposts: docs});
+        });
+      } else {
+        res.redirect("/");
+      }
+    }else{
+      res.redirect("/");
+    }
+  });
+});
+
 app.get("/home", function(req, res) {
   if (req.isAuthenticated()) {
-    Blog.find({}, function(err, foundBlog) {
+    var userid = req.user.id;
+    User.findOne({_id: mongoose.Types.ObjectId(userid)}, function(err, foundUser){
+      if(!err && foundUser){
+        if(foundUser.blogs.length>0){
 
-      if (foundBlog.length == 0) {
-        Blog.insertMany(defaultcontents, function(err) {
-          if (err) {
-            console.log(err);
-          } else {
-            console.log("Successfully saved all defaultitems!");
-          }
-        });
-        res.redirect("/home");
-      }
-      if (err) {
-        console.log(err);
-      } else {
-        res.render("home", {hposts: foundBlog});
+          Blog.find({
+              '_id': { $in: foundUser.blogs}
+          }, function(err, docs){
+               res.render("home", {hposts: docs});
+          });
+
+        } else {
+          Blog.insertMany(defaultcontents, function(err, result){
+            if (err) {
+              console.log(err);
+            } else {
+              console.log("Successfully saved all defaultitems!");
+              result.forEach(function(content){
+                foundUser.blogs.push(mongoose.Types.ObjectId(content._id));
+              });
+              foundUser.save();
+              res.redirect("/home");
+            }
+          });
+        }
       }
     });
   } else {
@@ -241,7 +298,7 @@ if (req.isAuthenticated()) {
     if (err){
         console.log(err);
     }else{
-        console.log("Updated User");
+        console.log("Updated Blog");
         res.redirect("/post/" + docs._id);
     }});
   }else{
@@ -257,6 +314,10 @@ if (req.isAuthenticated()) {
         content: req.body.newpost
       }, function(err, foundblog) {
         if (!err) {
+          User.findOne({_id: mongoose.Types.ObjectId(req.user.id)}, function(err, foundUser){
+            foundUser.blogs.push(mongoose.Types.ObjectId(foundblog._id));
+            foundUser.save();
+          });
           res.redirect("/post/" + foundblog._id);
         }
       })
@@ -278,7 +339,13 @@ app.post("/edit", function(req, res) {
 
 app.post("/delete", function(req, res) {
  if (req.isAuthenticated()) {
-  console.log(req.body.deleteitem);
+
+  User.findByIdAndUpdate(req.user.id, {$pull: {blogs: mongoose.Types.ObjectId(req.body.deleteitem)}}, function(err, foundblogs){
+     if(err){
+       console.log(err);
+     }
+  })
+
   Blog.findByIdAndDelete(req.body.deleteitem, function (err, docs) {
       if (err){
           console.log(err)
