@@ -1,0 +1,31 @@
+<%- include("partials/header") -%>
+
+<script src="https://cdn.tiny.cloud/1/<%= tinykey%>/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+  tinymce.init({
+    selector: '#mytextarea',
+    menubar: 'edit insert format',
+    height: 320,
+    plugins: 'code emoticons wordcount',
+    toolbar: 'undo redo | styles | bold italic | alignleft aligncenter alignright alignjustify | ' +
+    'bullist numlist outdent indent | emoticons |' +
+    'forecolor backcolor wordcount',
+  });
+</script>
+
+<h1>Compose</h1>
+<form class="post" action="/compose" method="post">
+
+  <div class="form-group">
+    <label for="newtitle">Title</label>
+    <input class="form-control" type="text" name="newtitle" value="<%=texttitle%>" autocomplete="off">
+    <input class="hidden" type="hidden" name="textid" value="<%=textid%>" autocomplete="off">
+  </div>
+  <div class="form-group">
+    <label for="newpost">Post</label>
+    <textarea id="mytextarea" class="form-control" name="newpost" rows="5"><%- textcontent %></textarea>
+  </div>
+  <button type="submit" name="button" class="composebtn btn btn-outline-dark">Publish</button>
+</form>
+
+<%- include("partials/footer") -%>
