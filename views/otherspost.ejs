@@ -1,0 +1,18 @@
+<%- include("partials/header") -%>
+
+  <h1><%= postitem.title %></h1>
+  <%- postitem.content %>
+  <div class='large-font text-center'>
+    <ion-icon name="heart">
+      <div class='red-bg'></div>
+    </ion-icon>
+  </div>
+
+  <script type="text/javascript">
+    let icon = document.querySelector('ion-icon');
+    icon.onclick = function(){
+      icon.classList.toggle('active');
+    }
+  </script>
+
+<%- include("partials/footer") -%>

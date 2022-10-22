@@ -52,7 +52,7 @@ const about = new Blog({
   content: aboutContent,
   ispost: false
 })
-const defaultcontents = [home1, about];
+const defaultcontents = [home1];
 
 // authentication
 const userSchema = new mongoose.Schema({
@@ -62,6 +62,8 @@ const userSchema = new mongoose.Schema({
   },
   password: String,
   googleId: String,
+  nickname: String,
+  aboutme: String,
   blogs: [mongoose.Types.ObjectId]
 });
 userSchema.plugin(passportLocalMongoose);
@@ -148,7 +150,7 @@ app.get("/people/:uid", function(req, res){
             Blog.find({
                 '_id': { $in: foundUser.blogs}
             }, function(err, docs){
-                 res.render("people", {hposts: docs});
+                 res.render("people", {nickname: foundUser.nickname, hposts: docs});
             });
           } else {
             res.redirect("/home");
@@ -171,7 +173,7 @@ app.get("/visitor/:uid", function(req, res){
         Blog.find({
             '_id': { $in: foundUser.blogs}
         }, function(err, docs){
-             res.render("visitor", {hposts: docs});
+             res.render("visitor", {nickname: foundUser.nickname, hposts: docs});
         });
       } else {
         res.redirect("/");
@@ -192,7 +194,7 @@ app.get("/home", function(req, res) {
           Blog.find({
               '_id': { $in: foundUser.blogs}
           }, function(err, docs){
-               res.render("home", {hposts: docs});
+               res.render("home", {nickname: foundUser.nickname, hposts: docs});
           });
 
         } else {
@@ -204,6 +206,8 @@ app.get("/home", function(req, res) {
               result.forEach(function(content){
                 foundUser.blogs.push(mongoose.Types.ObjectId(content._id));
               });
+              foundUser.nickname = "CAT User";
+              foundUser.aboutme = aboutContent;
               foundUser.save();
               res.redirect("/home");
             }
@@ -258,9 +262,11 @@ app.post("/logout", function(req, res) {
 
 app.get("/about", function(req, res) {
   if (req.isAuthenticated()) {
-  res.render("about", {
-    about: aboutContent
-  });
+    User.findById(req.user.id, function(err, foundUser){
+      if(!err) {
+        res.render("about", {about: foundUser.aboutme});
+      }
+    })
 } else {
   res.redirect("/");
 }});
@@ -283,6 +289,22 @@ app.get("/post/:id", function(req, res) {
   }, function(err, foundblog) {
     if (!err) {
       res.render("post", {
+        postitem: foundblog
+      });
+    }
+  })
+} else {
+  res.redirect("/");
+}});
+
+app.get("/otherspost/:id", function(req, res) {
+  if (req.isAuthenticated()) {
+  const blogid = req.params.id;
+  Blog.findOne({
+    _id: blogid
+  }, function(err, foundblog) {
+    if (!err) {
+      res.render("otherspost", {
         postitem: foundblog
       });
     }
@@ -358,7 +380,23 @@ app.post("/delete", function(req, res) {
 } else {
   res.redirect("/");
 }});
+app.get("/settings", function(req, res) {
+  res.render("settings"); //{nickname:nickname, aboutme: aboutme}
+});
+app.post("/settings", function(req, res) {
+  if (req.isAuthenticated()) {
+  const nickname = req.body.nickname;
+  const aboutme = req.body.aboutme;
+  User.findByIdAndUpdate(req.user.id, {nickname: nickname, aboutme: aboutme}, function(err, foundblogs){
+     if(!err){
+       res.redirect("/home");
+     }
+  })
 
+  } else {
+    res.redirect("/");
+  }
+});
 
 app.listen(3000, function() {
   console.log("Server started on port 3000");
