@@ -102,7 +102,8 @@ passport.deserializeUser(function(user, cb) {
 passport.use(new GoogleStrategy({
     clientID: process.env.CLIENTID,
     clientSecret: process.env.CLIENTKEY,
-    callbackURL: "http://localhost:3000/auth/google/home",
+    // callbackURL: "http://localhost:3000/auth/google/home", // for local
+    callbackURL: "https://cat-ocean.herokuapp.com/auth/google/home",  //for heroku
     // userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
   function(accessToken, refreshToken, profile, cb) {
